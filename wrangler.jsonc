@@ -2,6 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "caveman-canvas",
   "main": "src/index.ts",
-  "compatibility_date": "2023-10-01",
+  "compatibility_date": "2025-10-01",
   "observability": { "enabled": true }
 }

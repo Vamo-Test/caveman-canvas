@@ -1,4 +1,4 @@
-// caveman-canvas — Interactive caveman simulation in your browser.
+// caveman-canvas — Visualize memory leaks and use-after-free vulnerabilities in real-time.
 // Zero-dependency Worker that serves ONE self-contained HTML micro-product. The entire app
 // (markup, styles, and logic) is authored by the agent and inlined below as a single document —
 // no framework, no build step, no external requests.
@@ -6,74 +6,107 @@
 const html = `<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Caveman Canvas</title>
-<style>
-body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #121212; color: #e0e0e0; font-family: Arial, sans-serif; }
-canvas { border: 2px solid #424242; }
-@media (prefers-color-scheme: light) {
-  body { background: #ffffff; color: #000000; }
-  canvas { border-color: #d3d3d3; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caveman Canvas - Use After Free Visualization</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        canvas {
+            border: 2px solid #4caf50;
+        }
+        @media (prefers-color-scheme: light) {
+            body {
+                background-color: #ffffff;
+                color: #000000;
+            }
+            canvas {
+                border-color: #f44336;
+            }
+        }
+    </style>
 </head>
 <body>
-<canvas id="cavemanCanvas"></canvas>
-<script>
-const canvas = document.getElementById('cavemanCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+    <canvas id="cavemanCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('cavemanCanvas');
+        const ctx = canvas.getContext('2d');
 
-class Caveman {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.size = Math.random() * 20 + 10;
-    this.speedX = (Math.random() - 0.5) * 2;
-    this.speedY = (Math.random() - 0.5) * 2;
-    this.color = \`hsl(\${Math.random() * 360}, 100%, 50%)\`;
-  }
+        let pointers = [];
+        let freePointers = [];
 
-  update() {
-    this.x += this.speedX;
-    this.y += this.speedY;
+        function Pointer(x, y) {
+            this.x = x;
+            this.y = y;
+            this.color = \`hsl(\${Math.random() * 360}, 100%, 50%)\`;
+            this.size = Math.random() * 10 + 5;
+        }
 
-    if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-    if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-  }
+        function createPointer(x, y) {
+            const pointer = new Pointer(x, y);
+            pointers.push(pointer);
+        }
 
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = this.color;
-    ctx.fill();
-    ctx.closePath();
-  }
-}
+        function freePointer(index) {
+            if (index >= 0 && index < pointers.length) {
+                freePointers.push(pointers[index]);
+                pointers.splice(index, 1);
+            }
+        }
 
-const cavemen = [];
-for (let i = 0; i < 50; i++) {
-  cavemen.push(new Caveman(Math.random() * canvas.width, Math.random() * canvas.height));
-}
+        function useAfterFree() {
+            if (freePointers.length > 0) {
+                const randomIndex = Math.floor(Math.random() * freePointers.length);
+                const pointer = freePointers[randomIndex];
+                pointer.x += (Math.random() - 0.5) * 10;
+                pointer.y += (Math.random() - 0.5) * 10;
+                freePointers.splice(randomIndex, 1);
+                pointers.push(pointer);
+            }
+        }
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  cavemen.forEach(caveman => {
-    caveman.update();
-    caveman.draw();
-  });
-  requestAnimationFrame(animate);
-}
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-animate();
+            pointers.forEach((pointer, index) => {
+                ctx.beginPath();
+                ctx.arc(pointer.x, pointer.y, pointer.size, 0, Math.PI * 2);
+                ctx.fillStyle = pointer.color;
+                ctx.fill();
+                ctx.closePath();
 
-window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-});
-</script>
+                // Simulate use-after-free by occasionally reusing freed pointers
+                if (Math.random() < 0.01) {
+                    freePointer(index);
+                }
+            });
+
+            // Occasionally introduce use-after-free condition
+            if (Math.random() < 0.005) {
+                useAfterFree();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        canvas.addEventListener('mousemove', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            createPointer(x, y);
+        });
+
+        draw();
+    </script>
 </body>
 </html>`;
 

@@ -1,6 +1,6 @@
 # caveman-canvas
 
-Interactive caveman simulation in your browser.
+Visualize memory leaks and use-after-free vulnerabilities in real-time.
 
 A self-contained interactive micro-product — one HTML document (markup, styles, and
 JavaScript inline), served by a zero-dependency Cloudflare Worker. No framework, no
